@@ -1,0 +1,11 @@
+[Desktop Entry]
+#Encoding=UTF-8
+Version=1.0.0
+Type=Application
+Name=start_all
+Comment=chestnut_picker 
+Exec=/home/nvidia/chestnut_picker_ros/autostart_scripts/autostart_all.sh
+StartupNotify=false
+Terminal=false
+Hidden=false
+

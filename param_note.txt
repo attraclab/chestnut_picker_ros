@@ -1,0 +1,17 @@
+
+Y_grab_max = 370
+X_grab_max 300
+
+grabHeight = -760
+
+
+## Basket
+ZBucket = -320
+YBucket = 590
+XBucket = 0
+
+
+Xlength = 825
+Ylength = 620
+
+

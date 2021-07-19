@@ -1,0 +1,10 @@
+export ROS_IPV6=off
+export ROS_MASTER_URI=http://localhost:11311
+export ROS_IP=192.168.70.248
+export ROS_HOSTNAME=$ROS_IP
+
+#xport ROS_IPV6=on
+#export ROS_MASTER_URI=http://pigfarm1:11311
+#export ROS_HOSTNAME=pigfarm1
+
+#192.168.0.21

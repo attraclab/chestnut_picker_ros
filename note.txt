@@ -1,0 +1,11 @@
+firstly install tensorrt_demos from github
+
+run ./ssd/install_pycuda_python2.sh to install pycuda for python2
+
+when generating the onnx/trt model we still need to use python3 as default
+	python3 yolo_to_onnx.py -m yolov4-416
+	python3 onnx_to_tensorrt.py -m yolov4-416
+
+if there is error about no module ... something just sudo pip install with that module
+
+
