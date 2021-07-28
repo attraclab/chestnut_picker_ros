@@ -63,6 +63,11 @@ The AI detection is taken care by tenssort_ros, this is a modifed version of ten
 - `/detection`: a custom message which show number of boxes, and center pixels of object
 - `/trt_streaming`: an image topic to debug/visualize what's the robot seeing right now.
 
+The idea to let the robot go grab on the chestnut is, once we got the detection data, we convert the center point (pixel) of obect into robot coordinates (mm), and the object's position is estimated from [this](https://github.com/ginzafarm/chestnut_picker_ros/blob/22bf9cf5fc9be8c56a03665fdb902b4efb1b43f0/chestnut_picker_demo.py#L40) true X,Y parameters, by using this [linear mapping function](https://github.com/ginzafarm/chestnut_picker_ros/blob/22bf9cf5fc9be8c56a03665fdb902b4efb1b43f0/chestnut_picker_demo.py#L106). Once we got the object pose in mm, then we need to add `cameraOffset` and/or `roverOffset` to shift the object in camera frame coordinates into real robot coordinates. 
+
+![](images/rviz.png)
+
+
 The robot manipulator movement node is subscribing on topics above and perform autonomous drive and picking. The main file is `chestnut_picker_demo.py` .
 
 Once the robot got power, please make sure to put the robot arm on empty space or on the ground, it would take around 2 minutes to start Wifi router and ensure everything is running properly, then you will see the robot is moving up to home position by itself.
