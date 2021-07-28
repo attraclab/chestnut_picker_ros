@@ -34,35 +34,36 @@ class ChestnutPicker:
 		self.xc = np.array([])
 		self.yc = np.array([])
 
-
+		##############################
 		### Robot Arm's Parameters ###
-		self.Xlength = 825.0 # This is a true length from camera view
-		self.Ylength = 620.0
+		##############################
+		self.Xlength = 825.0 	# This is a true length (width) from camera view
+		self.Ylength = 620.0	# This is a true length (height) from camera view
 
-		self.grabHeight = -745.0	#-720.0 #-725.0  #-723.0
+		self.grabHeight = -745.0	# adjust this according to distance how much the robot should go pick
 		self.XBucket = 0.0
-		self.YBucket = 600.0
-		self.ZBucket = -300.0
-
-		self.XHome = 0.0
-		self.YHome = 0.0
-		self.ZHome = -329.9795
+		self.YBucket = 600.0	# the distance where robot going to drop on bucket
+		self.ZBucket = -300.0	# the height distnace where robot going to drop on bucket
 
 		self.finishTime = 1200
 
-		self.cameraOffset = 80.0  #95.0
-		self.roverOffset = 45.0   #according to the throttle speed
+		## offset distance 
+		self.cameraOffset = 80.0  # adjust this according to camera height
+		self.roverOffset = 45.0   # adjust this according to the throttle speed
 
 		self.ROBOT_MODE = "MANUAL"
 		self.picker_flag = True
 
+		#########################
 		### Motion Parameters ###
+		#########################
 		self.waitTime = 0.8
 		self.grab_waitTime = 0.5
 		self.goGome_waitTime = 1.2
 
+		## constant speed of vehicle in sbus value
 		self.const_throttle = 1140
-		self.const_bwd_throttle = 870
+		self.const_bwd_throttle = 880
 
 
 		self.loop()
@@ -91,12 +92,11 @@ class ChestnutPicker:
 
 
 		if msg.data[5] > 1500:
+			## ARM ON
 			self.picker_flag = True
 		else:
+			## ARM OFF
 			self.picker_flag = False
-
-
-
 
 
 	def map(self, val, in_min, in_max, out_min, out_max):
@@ -124,17 +124,17 @@ class ChestnutPicker:
 			## check if object is close to left/right frame
 			## we modified X to narrower, but it could still pick
 			if X > 325.0:
-				print("old X", X)
+				# print("old X", X)
 				X = 320.0
 			elif X < -320.0:
-				print("old X", X)
+				# print("old X", X)
 				X = -320.0
 
-			print("X: {:.2f} | Y: {:.2f} | Y cam off: {:.2f} | rover_offset: {:}".format(\
+			print("X: {:3.2f} | Y: {:3.2f} | Y cam off: {:3.2f} | rover_offset: {:}".format(\
 				X,Y,Y_with_offset, from_move_flag))
 
 			## if Y is in the proper zone
-			if (Y_with_offset < 370.0):
+			if (Y_with_offset < 340.0):
 				self.dr.GotoPoint(X,(Y_with_offset), self.grabHeight)
 				time.sleep(self.waitTime)
 				self.dr.GripperClose()
