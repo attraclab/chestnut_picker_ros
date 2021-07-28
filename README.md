@@ -33,7 +33,7 @@ For more information about JMOAB, please check on this [repo](https://github.com
 
 This robot configuration is 3DOF Parallel Linkage "Delta" Robot, it's well known in manufacturing process for speed-picking. For more detail and dimensions please check on this [repo](https://github.com/rasheeddo/The-Delta-Robot-MK2-Cpp).
 
-The inverse kinematics are same on that repo and this repo, the different are robot working range, servo's PIDs, limitation and some functions. You can check more detail of robot setup on `DeltaRobot.py`.
+The inverse kinematics are same on that repo and this repo, the different are robot working range, servo's PIDs, limitation and some functions. You can check more detail of robot setup on `DeltaRobot.py` [here](https://github.com/ginzafarm/chestnut_picker_ros/blob/dev-pwmcart/DeltaRobot.py).
 
 
 ## UGV control
@@ -69,14 +69,17 @@ Once the robot got power, please make sure to put the robot arm on empty space o
 
 
 **NOTE**
-Normally the robot will automatically start once it got power on, the start up scripts are in `autostart_scripts` directory. If you don't want the robot to be auto-start, you can remove the start file with this command below.
+Normally the robot will automatically start once it got power on, the start up scripts are in `autostart_scripts` [directory](https://github.com/ginzafarm/chestnut_picker_ros/tree/dev-pwmcart/autostart_scripts). If you don't want the robot to be auto-start, you can remove the start file with this command below.
 
 `rm ~/.config/autostart/start_all.desktop`
-`reboot`
+
+`sudo reboot`
 
 If you remove this and want to make it auto-start again, please run the command below.
 
 `cd /home/nvidia/chestnut_picker_ros/autostart_scripts/_config_autostart`
+
 `cp start_all.desktop ~/.config/autostart/`
-`reboot`
+
+`sudo reboot`
 
