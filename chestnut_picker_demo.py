@@ -36,8 +36,12 @@ class ChestnutPicker:
 
 
 		### Robot Arm's Parameters ###
-		self.Xlength = 825.0 # This is a true length from camera view
-		self.Ylength = 620.0
+		## TODO : change Xlenght, Ylength according to how much the robot in home position can see in that frame size
+		##        change YBucket, ZBucket according to the height and distance of bucket
+		##        change grabHeight to the height where robot can grab easily
+		## use DR_Kinematics.py script to get robot coordinates of each position
+		self.Xlength = 760.0 # This is a true length from camera view
+		self.Ylength = 575.0
 
 		self.grabHeight = -745.0	#-720.0 #-725.0  #-723.0
 		self.XBucket = 0.0
@@ -61,8 +65,8 @@ class ChestnutPicker:
 		self.grab_waitTime = 0.5
 		self.goGome_waitTime = 1.2
 
-		self.const_throttle = 1140
-		self.const_bwd_throttle = 870
+		self.const_throttle = 1120	#1140
+		self.const_bwd_throttle = 960	#870
 
 
 		self.loop()
@@ -89,8 +93,9 @@ class ChestnutPicker:
 		else:
 			self.ROBOT_MODE = "AUTO"
 
-
-		if msg.data[5] > 1500:
+		## ch6 [5] for pwmcart
+		## ch7 [6] for atcart
+		if msg.data[6] > 1500:
 			self.picker_flag = True
 		else:
 			self.picker_flag = False
@@ -123,18 +128,18 @@ class ChestnutPicker:
 
 			## check if object is close to left/right frame
 			## we modified X to narrower, but it could still pick
-			if X > 325.0:
+			if X > 310.0:
 				print("old X", X)
-				X = 320.0
-			elif X < -320.0:
+				X = 310.0
+			elif X < -295.0:
 				print("old X", X)
-				X = -320.0
+				X = -295.0
 
 			print("X: {:.2f} | Y: {:.2f} | Y cam off: {:.2f} | rover_offset: {:}".format(\
 				X,Y,Y_with_offset, from_move_flag))
 
 			## if Y is in the proper zone
-			if (Y_with_offset < 370.0):
+			if (Y_with_offset < 350.0):
 				self.dr.GotoPoint(X,(Y_with_offset), self.grabHeight)
 				time.sleep(self.waitTime)
 				self.dr.GripperClose()

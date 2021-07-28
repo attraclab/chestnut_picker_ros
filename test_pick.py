@@ -31,10 +31,10 @@ class ChestnutPicker:
 
 
 		### Robot's Parameters ###
-		self.Xlength = 825.0 # This is a true length from camera view
-		self.Ylength = 620.0
+		self.Xlength = 760.0 # This is a true length from camera view
+		self.Ylength = 575.0
 
-		self.grabHeight = -745.0	#-720.0 #-725.0  #-723.0
+		self.grabHeight = -745.0	#-745
 		self.XBucket = 0.0
 		self.YBucket = 600.0
 		self.ZBucket = -300.0
