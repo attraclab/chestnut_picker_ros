@@ -1,0 +1,7 @@
+classes= 1
+train  = /home/attraclab/darknet-yolov4/data/train_CHN_20210823.txt
+valid  = /home/attraclab/darknet-yolov4/data/test_CHN_20210823.txt
+names = /home/attraclab/darknet-yolov4/data/obj_CHN_20210823.names
+backup = /home/attraclab/darknet-yolov4/backup/
+
+
