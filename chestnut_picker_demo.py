@@ -46,7 +46,7 @@ class ChestnutPicker:
 		self.grabHeight = -745.0	#-720.0 #-725.0  #-723.0
 		self.XBucket = 0.0
 		self.YBucket = 600.0
-		self.ZBucket = -300.0
+		self.ZBucket = -300.0 #-300.0
 
 		self.XHome = 0.0
 		self.YHome = 0.0
@@ -61,9 +61,9 @@ class ChestnutPicker:
 		self.picker_flag = True
 
 		### Motion Parameters ###
-		self.waitTime = 0.8
+		self.waitTime = 0.5
 		self.grab_waitTime = 0.5
-		self.goGome_waitTime = 1.2
+		self.goGome_waitTime = 0.6 #1.2
 
 		self.const_throttle = 1120	#1140
 		self.const_bwd_throttle = 960	#870
@@ -147,7 +147,7 @@ class ChestnutPicker:
 				self.dr.GotoPoint(X,(Y_with_offset), self.ZBucket)
 				time.sleep(self.waitTime)
 				self.dr.GotoPoint(self.XBucket,self.YBucket-200,self.ZBucket)
-				time.sleep(self.waitTime/2.0)
+				time.sleep(self.waitTime) # self.waitTime/2.0
 				self.dr.GotoPoint(self.XBucket,self.YBucket,self.ZBucket)
 				time.sleep(self.waitTime)
 				self.dr.GripperOpen()
@@ -170,18 +170,27 @@ class ChestnutPicker:
 
 		rate = rospy.Rate(20)
 		from_pick_flag = False
-	
+		last_move_time = time.time()
 		j = 0
+		move_delay = 1.0
+
 		while not rospy.is_shutdown():
 
 			if (self.nboxes > 0) and (self.picker_flag):
-
+				# print("Found, stop cart")
 				sbus_throttle = 1024
 				sbus_steering = 1024
 				self.sbus_cmd.data = [sbus_steering, sbus_throttle]
 				self.sbus_cmd_pub.publish(self.sbus_cmd)
+				time.sleep(move_delay)
 
-				self.go_pick(from_move_flag)
+				# if (time.time() - last_move_time) > move_delay:
+				# 	from_move_flag = True
+				# else:
+				# 	from_move_flag = False
+
+				# self.go_pick(from_move_flag)
+				self.go_pick(False)
 
 
 				## Wait a bit after stop
@@ -193,19 +202,25 @@ class ChestnutPicker:
 				from_move_flag = False
 				from_pick_flag = True
 
+
 			else:
-
-				if from_pick_flag:
-					time.sleep(0.5)
-
+				# print("Going...")
+			
 				sbus_throttle = self.const_throttle
 				sbus_steering = 1024
-				from_move_flag = True
-				from_pick_flag = False
-
+				
 				self.sbus_cmd.data = [sbus_steering, sbus_throttle]
 
 				self.sbus_cmd_pub.publish(self.sbus_cmd)
+
+				# if from_pick_flag:
+				# 	time.sleep(move_delay)
+
+				from_move_flag = True
+				from_pick_flag = False
+
+				last_move_time = time.time()
+
 
 
 			rate.sleep()
