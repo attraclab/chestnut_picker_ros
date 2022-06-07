@@ -1292,8 +1292,8 @@ class DeltaRobot:
 		pos2 = 135.0
 		pos3 = 135.0
 		
-		t1 = 300
-		t3 = 600
+		t1 = 400
+		t3 = 800
 
 		self.RunServoInTime(pos1,t1,t3,pos2,t1,t3,pos3,t1,t3)
 		#self.IsAllStop()
@@ -1451,27 +1451,27 @@ class DeltaRobot:
 
 		WARN = self.XYZOutRange(x,y,z)
 		if not WARN:
-			PreAng = self.ReadAngle()
-			PreAng1 = PreAng[0]
-			PreAng2 = PreAng[1]
-			PreAng3 = PreAng[2]
+			# PreAng = self.ReadAngle()
+			# PreAng1 = PreAng[0]
+			# PreAng2 = PreAng[1]
+			# PreAng3 = PreAng[2]
 
 			GoalPos = self.INV(x,y,z)
 			GoalPos1 = GoalPos[0] + 180.0
 			GoalPos2 = GoalPos[1] + 180.0
 			GoalPos3 = GoalPos[2] + 180.0
 
-			DelPos1 = self.DeltaPos(PreAng1,GoalPos1)
-			DelPos2 = self.DeltaPos(PreAng2,GoalPos2)
-			DelPos3 = self.DeltaPos(PreAng3,GoalPos3)
-			if DelPos1 == 0 and DelPos2 == 0 and DelPos3 == 0:
-				return
+			# DelPos1 = self.DeltaPos(PreAng1,GoalPos1)
+			# DelPos2 = self.DeltaPos(PreAng2,GoalPos2)
+			# DelPos3 = self.DeltaPos(PreAng3,GoalPos3)
+			# if DelPos1 == 0 and DelPos2 == 0 and DelPos3 == 0:
+			# 	return
 
 			# Time Base Profile
     		# Finish time
-			t3_1 = 500	#1000
-			t3_2 = 500	#1000
-			t3_3 = 500	#1000
+			t3_1 = 800 #500	#1000
+			t3_2 = 800 #500	#1000
+			t3_3 = 800 #500	#1000
 			t1_1 = t3_1/2
 			t1_2 = t3_2/2
 			t1_3 = t3_3/2

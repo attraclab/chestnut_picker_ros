@@ -5,7 +5,8 @@ from DeltaRobot import *
 import time
 import numpy as np
 
-from tensorrt_demos_ros.msg import *
+# from tensorrt_demos_ros.msg import *
+from oakd_ros.msg import DetectionWithDepth
 from std_msgs.msg import Int32MultiArray
 
 
@@ -16,7 +17,7 @@ class ChestnutPicker:
 		rospy.init_node("chestnut_picker_node", anonymous=True)
 		print("Start Chestnut-Picker-ROS node")
 
-		rospy.Subscriber("/detection", Detection, self.detection_callback)
+		rospy.Subscriber("/oakd/detection", DetectionWithDepth, self.detection_callback)
 		rospy.Subscriber("/sbus_rc_ch", Int32MultiArray, self.sbus_ch_callback)
 
 		self.sbus_cmd_pub = rospy.Publisher("/sbus_cmd", Int32MultiArray, queue_size=10)
@@ -33,20 +34,20 @@ class ChestnutPicker:
 		self.nboxes = 0
 		self.xc = np.array([])
 		self.yc = np.array([])
-
+		self.closest_depth = np.array([])
 
 		### Robot Arm's Parameters ###
 		## TODO : change Xlenght, Ylength according to how much the robot in home position can see in that frame size
 		##        change YBucket, ZBucket according to the height and distance of bucket
 		##        change grabHeight to the height where robot can grab easily
 		## use DR_Kinematics.py script to get robot coordinates of each position
-		self.Xlength = 760.0 # This is a true length from camera view
-		self.Ylength = 575.0
+		self.Xlength = 840.0 #760.0 # This is a true length from camera view
+		self.Ylength = 480.0 #575.0
 
-		self.grabHeight = -745.0	#-720.0 #-725.0  #-723.0
+		self.grabHeight = -763.0 #-745.0	#-720.0 #-725.0  #-723.0
 		self.XBucket = 0.0
-		self.YBucket = 600.0
-		self.ZBucket = -300.0 #-300.0
+		self.YBucket = -280.0 #600.0
+		self.ZBucket = -350.0 #-300.0
 
 		self.XHome = 0.0
 		self.YHome = 0.0
@@ -54,18 +55,18 @@ class ChestnutPicker:
 
 		self.finishTime = 1200
 
-		self.cameraOffset = 80.0  #95.0
+		self.cameraOffset = 90.0  #95.0
 		self.roverOffset = 45.0   #according to the throttle speed
 
 		self.ROBOT_MODE = "MANUAL"
 		self.picker_flag = True
 
 		### Motion Parameters ###
-		self.waitTime = 0.5
+		self.waitTime = 0.8 #0.5
 		self.grab_waitTime = 0.5
 		self.goGome_waitTime = 0.6 #1.2
 
-		self.const_throttle = 1120	#1140
+		self.const_throttle = 1150 #1120	#1140
 		self.const_bwd_throttle = 960	#870
 
 
@@ -79,6 +80,7 @@ class ChestnutPicker:
 
 		self.xc = np.array(msg.xc.data)
 		self.yc = np.array(msg.yc.data)
+		self.closest_depth = np.array(msg.closest_depth.data)
 
 		# print("xc", self.xc)
 		# print("yc", self.yc)
@@ -109,8 +111,8 @@ class ChestnutPicker:
 		return (val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 	def pixelToCartesian(self, px, py):
-		x = self.map(px,0,640,-self.Xlength/2.0, self.Xlength/2.0) # use map() give similar result as coor_g()
-		y = self.map(py,0,480,self.Ylength/2.0,-self.Ylength/2.0)
+		x = self.map(px,0,1280,-self.Xlength/2.0, self.Xlength/2.0) # use map() give similar result as coor_g()
+		y = self.map(py,0,720,self.Ylength/2.0,-self.Ylength/2.0)
 		return x,y
 
 	def go_pick(self, from_move_flag):
@@ -126,43 +128,56 @@ class ChestnutPicker:
 			else:
 				Y_with_offset = Y+self.cameraOffset
 
-			## check if object is close to left/right frame
-			## we modified X to narrower, but it could still pick
-			if X > 310.0:
-				print("old X", X)
-				X = 310.0
-			elif X < -295.0:
-				print("old X", X)
-				X = -295.0
+			## calculate height
+			Z_est = -self.closest_depth[0]*1000.0 - 108.0 # TODO: change this offset for other camera
+			if Z_est < self.grabHeight:
+				print("use grabHeight")
+				Z = self.grabHeight
+			else:
+				print("use Z_est")
+				Z = Z_est
 
-			print("X: {:.2f} | Y: {:.2f} | Y cam off: {:.2f} | rover_offset: {:}".format(\
-				X,Y,Y_with_offset, from_move_flag))
+			print("X: {:.2f} | Y: {:.2f} | Y cam off: {:.2f} | Z: {:.2f}".format(\
+				X,Y,Y_with_offset, Z))
+
+			## conditions if X,Y in frame area
+			X_in_frameZone = (-220.0 < X < 220.0)
+			Y_in_frameZone = (Y_with_offset < 200.0)
 
 			## if Y is in the proper zone
-			if (Y_with_offset < 350.0):
-				self.dr.GotoPoint(X,(Y_with_offset), self.grabHeight)
+			if (not X_in_frameZone) and (Y_in_frameZone):
+				print("X is out frame, and Y is close to frame")
+				return
+				#continue
+			else:
+				self.dr.GotoPoint(X,(Y_with_offset), Z)
 				time.sleep(self.waitTime)
 				self.dr.GripperClose()
 				time.sleep(self.grab_waitTime)
 				self.dr.GotoPoint(X,(Y_with_offset), self.ZBucket)
 				time.sleep(self.waitTime)
-				self.dr.GotoPoint(self.XBucket,self.YBucket-200,self.ZBucket)
+				self.dr.GotoPoint(self.XBucket, 0.0,self.ZBucket)
 				time.sleep(self.waitTime) # self.waitTime/2.0
 				self.dr.GotoPoint(self.XBucket,self.YBucket,self.ZBucket)
 				time.sleep(self.waitTime)
 				self.dr.GripperOpen()
 				time.sleep(self.grab_waitTime)
-				self.dr.GotoPoint(self.XBucket,self.YBucket-200,self.ZBucket)
+				self.dr.GotoPoint(self.XBucket, 0.0,self.ZBucket)
 				time.sleep(self.waitTime)
 				self.dr.GoHome()
 				time.sleep(self.goGome_waitTime)
-			else:
-				print("Too close to front frame, go back a bit...")
-				sbus_throttle = self.const_bwd_throttle
-				sbus_steering = 1024
-				self.sbus_cmd.data = [sbus_steering, sbus_throttle]
-				self.sbus_cmd_pub.publish(self.sbus_cmd)
-				time.sleep(1.0)
+
+
+
+			# else:
+			# 	print("Too close to front frame, go back a bit...")
+			# 	sbus_throttle = self.const_bwd_throttle
+			# 	sbus_steering = 1024
+			# 	self.sbus_cmd.data = [sbus_steering, sbus_throttle]
+			# 	self.sbus_cmd_pub.publish(self.sbus_cmd)
+			# 	time.sleep(1.0)
+		else:
+			return
 
 
 

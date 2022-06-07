@@ -5,7 +5,9 @@ from DeltaRobot import *
 import time
 import numpy as np
 
-from tensorrt_demos_ros.msg import *
+# from tensorrt_demos_ros.msg import *
+from oakd_ros.msg import DetectionWithDepth
+
 
 
 class ChestnutPicker:
@@ -15,7 +17,7 @@ class ChestnutPicker:
 		rospy.init_node("chestnut_picker_node", anonymous=True)
 		print("Start Chestnut-Picker-ROS node")
 
-		rospy.Subscriber("/detection", Detection, self.detection_callback)
+		rospy.Subscriber("/oakd/detection", DetectionWithDepth, self.detection_callback)
 
 		self.dr = DeltaRobot()
 		self.dr.RobotTorqueOn()
@@ -28,16 +30,17 @@ class ChestnutPicker:
 		self.nboxes = 0
 		self.xc = np.array([])
 		self.yc = np.array([])
+		self.closest_depth = np.array([])
 
 
 		### Robot's Parameters ###
-		self.Xlength = 760.0 # This is a true length from camera view
-		self.Ylength = 575.0
+		self.Xlength = 840.0 #760.0 # This is a true length from camera view
+		self.Ylength = 480.0 #575.0
 
-		self.grabHeight = -745.0	#-745
+		self.grabHeight = -763.0 #-745.0	#-745
 		self.XBucket = 0.0
-		self.YBucket = 600.0
-		self.ZBucket = -300.0
+		self.YBucket = -280.0 #600.0
+		self.ZBucket = -350.0 #-300.0
 
 		self.XHome = 0.0
 		self.YHome = 0.0
@@ -45,7 +48,7 @@ class ChestnutPicker:
 
 		self.finishTime = 1200
 
-		self.cameraOffset = 80.0  #95.0
+		self.cameraOffset = 85.0  #95.0
 		self.roverOffset = 55.0   #on carpet 90.0 with 5rpm
 
 		### Motion Parameters ###
@@ -65,6 +68,7 @@ class ChestnutPicker:
 
 		self.xc = np.array(msg.xc.data)
 		self.yc = np.array(msg.yc.data)
+		self.closest_depth = np.array(msg.closest_depth.data)
 
 		# print("xc", self.xc)
 		# print("yc", self.yc)
@@ -77,8 +81,8 @@ class ChestnutPicker:
 		return (val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 	def pixelToCartesian(self, px, py):
-		x = self.map(px,0,640,-self.Xlength/2.0, self.Xlength/2.0) # use map() give similar result as coor_g()
-		y = self.map(py,0,480,self.Ylength/2.0,-self.Ylength/2.0)
+		x = self.map(px,0,1280,-self.Xlength/2.0, self.Xlength/2.0) # use map() give similar result as coor_g()
+		y = self.map(py,0,720,self.Ylength/2.0,-self.Ylength/2.0)
 		return x,y
 
 
@@ -88,7 +92,7 @@ class ChestnutPicker:
 		waitTime = 0.8
 		grab_waitTime = 0.5
 		goGome_waitTime = 1.2
-
+		Z_est = self.grabHeight
 		j = 0
 		while not rospy.is_shutdown():
 
@@ -96,28 +100,89 @@ class ChestnutPicker:
 
 				X,Y = self.pixelToCartesian(self.xc[0], self.yc[0])
 				Y_with_offset = Y+self.cameraOffset
-				print("X: {:.2f} | Y: {:.2f} | Y cam off: {:.2f}".format(\
-					X,Y,Y_with_offset))
 
-				if (Y_with_offset < 370.0):
-					self.dr.GotoPoint(X,(Y_with_offset), self.grabHeight)
+				if self.closest_depth[0] != 0.0:
+					Z_est = -self.closest_depth[0]*1000.0 - 108.0 # we added offset
+
+					if Z_est < self.grabHeight:
+						print("use grabHeight")
+						Z = self.grabHeight
+					else:
+						print("use Z_est")
+						Z = Z_est
+				else:
+					print("got 0.0 depth, use grabHeight")
+					Z = self.grabHeight
+				
+				print(X, Y, Y_with_offset, Z, Z_est)
+				print("closest_depth: ", self.closest_depth)
+
+				X_in_frameZone = (-220.0 < X < 220.0)
+				Y_in_frameZone = (Y_with_offset < 200.0)
+
+				if (not X_in_frameZone) and (Y_in_frameZone):
+					print("X is out frame, and Y is close to frame")
+					continue
+				
+				else:
+
+					self.dr.GotoPoint(X,(Y_with_offset), Z)
 					time.sleep(waitTime)
 					self.dr.GripperClose()
 					time.sleep(grab_waitTime)
 					self.dr.GotoPoint(X,(Y_with_offset), self.ZBucket)
 					time.sleep(waitTime)
-					self.dr.GotoPoint(self.XBucket,self.YBucket-200,self.ZBucket)
+					self.dr.GotoPoint(self.XBucket, 0.0,self.ZBucket)
 					time.sleep(waitTime/2.0)
 					self.dr.GotoPoint(self.XBucket,self.YBucket,self.ZBucket)
 					time.sleep(waitTime)
 					self.dr.GripperOpen()
 					time.sleep(grab_waitTime)
-					self.dr.GotoPoint(self.XBucket,self.YBucket-200,self.ZBucket)
+					self.dr.GotoPoint(self.XBucket, 0.0,self.ZBucket)
 					time.sleep(waitTime)
 					self.dr.GoHome()
 					time.sleep(goGome_waitTime)
-				else:
-					print("Too close to front frame")
+	
+
+				# if (Y_with_offset > 200.0):
+
+				# 	self.dr.GotoPoint(X,(Y_with_offset), Z)
+				# 	time.sleep(waitTime)
+				# 	self.dr.GripperClose()
+				# 	time.sleep(grab_waitTime)
+				# 	self.dr.GotoPoint(X,(Y_with_offset), self.ZBucket)
+				# 	time.sleep(waitTime)
+				# 	self.dr.GotoPoint(self.XBucket, 0.0,self.ZBucket)
+				# 	time.sleep(waitTime/2.0)
+				# 	self.dr.GotoPoint(self.XBucket,self.YBucket,self.ZBucket)
+				# 	time.sleep(waitTime)
+				# 	self.dr.GripperOpen()
+				# 	time.sleep(grab_waitTime)
+				# 	self.dr.GotoPoint(self.XBucket, 0.0,self.ZBucket)
+				# 	time.sleep(waitTime)
+				# 	self.dr.GoHome()
+				# 	time.sleep(goGome_waitTime)
+
+				# else:
+				# 	if (-220 < X < 220):
+				# 		self.dr.GotoPoint(X,(Y_with_offset), Z)
+				# 		time.sleep(waitTime)
+				# 		self.dr.GripperClose()
+				# 		time.sleep(grab_waitTime)
+				# 		self.dr.GotoPoint(X,(Y_with_offset), self.ZBucket)
+				# 		time.sleep(waitTime)
+				# 		self.dr.GotoPoint(self.XBucket, 0.0,self.ZBucket)
+				# 		time.sleep(waitTime/2.0)
+				# 		self.dr.GotoPoint(self.XBucket,self.YBucket,self.ZBucket)
+				# 		time.sleep(waitTime)
+				# 		self.dr.GripperOpen()
+				# 		time.sleep(grab_waitTime)
+				# 		self.dr.GotoPoint(self.XBucket, 0.0,self.ZBucket)
+				# 		time.sleep(waitTime)
+				# 		self.dr.GoHome()
+				# 		time.sleep(goGome_waitTime)
+				# 	else:
+				# 		print("Error Y close to frame, X is out too far ")
 
 			rate.sleep()
 

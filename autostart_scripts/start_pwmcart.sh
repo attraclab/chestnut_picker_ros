@@ -1,9 +1,9 @@
 #!/bin/bash
 
-sleep 1
+sleep 5
 
 export DISPLAY=:0.0
-export LOGFILE=/home/nvidia/chestnut_picker_ros/autostart_scripts/jmoab_launch_node.log
+export LOGFILE=/home/nvidia/chestnut_picker_ros/autostart_scripts/pwmcart_node.log
 
 source /opt/ros/melodic/setup.bash
 source /home/nvidia/catkin_ws/devel/setup.bash
@@ -17,9 +17,9 @@ do
 		echo "----------------------------------------------" >> $LOGFILE
 		date >> $LOGFILE
 
-		echo "Starting jmoab-ros jmoab-ros.launch" >> $LOGFILE
+		echo "Starting jmoab-ros jmoab-ros-pwmcart.py" >> $LOGFILE
 		
-		roslaunch jmoab-ros jmoab-ros.launch >> $LOGFILE
+		rosrun jmoab-ros jmoab-ros-pwmcart.py >> $LOGFILE
 
 		echo "program seems to have stopped" >> $LOGFILE
 

@@ -1,15 +1,15 @@
 #!/bin/bash
 
-sleep 15
+sleep 10
 
 export DISPLAY=:0.0
-export LOGFILE=/home/nvidia/chestnut_picker_ros/autostart_scripts/chestnut_picker_node.log
+export LOGFILE=/home/nvidia/chestnut_picker_ros/autostart_scripts/data_conveter_node.log
 
 source /opt/ros/melodic/setup.bash
 source /home/nvidia/catkin_ws/devel/setup.bash
 source /home/nvidia/chestnut_picker_ros/ROBOT_CONFIG.txt
 
-cd /home/nvidia/chestnut_picker_ros
+cd /home/nvidia/depthai_test
 
 while true
 do
@@ -17,9 +17,9 @@ do
 		echo "----------------------------------------------" >> $LOGFILE
 		date >> $LOGFILE
 
-		echo "Starting python chestnut_picker_demo" >> $LOGFILE
-
-		python -u chestnut_picker_demo.py  >> $LOGFILE
+		echo "Starting recvUdp_to_rostopic.py" >> $LOGFILE
+		
+		python -u recvUdp_to_rostopic.py >> $LOGFILE
 
 		echo "program seems to have stopped" >> $LOGFILE
 
