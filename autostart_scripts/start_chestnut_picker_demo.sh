@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sleep 15
+sleep 10
 
 export DISPLAY=:0.0
 export LOGFILE=/home/nvidia/chestnut_picker_ros/autostart_scripts/chestnut_picker_node.log
@@ -19,7 +19,7 @@ do
 
 		echo "Starting python chestnut_picker_demo" >> $LOGFILE
 
-		python -u chestnut_picker_demo.py  >> $LOGFILE
+		python -u chestnut_picker_demo.py --params_file DeltaRobotParams.yaml >> $LOGFILE
 
 		echo "program seems to have stopped" >> $LOGFILE
 

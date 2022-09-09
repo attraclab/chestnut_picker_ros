@@ -17,9 +17,9 @@ do
 		echo "----------------------------------------------" >> $LOGFILE
 		date >> $LOGFILE
 
-		echo "Starting jmoab-ros jmoab-ros-pwmcart.py" >> $LOGFILE
+		echo "Starting jmoab-ros pwmcart.py" >> $LOGFILE
 		
-		rosrun jmoab-ros jmoab-ros-pwmcart.py >> $LOGFILE
+		rosrun jmoab-ros pwmcart.py >> $LOGFILE
 
 		echo "program seems to have stopped" >> $LOGFILE
 

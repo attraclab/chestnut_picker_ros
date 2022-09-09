@@ -1,34 +1,33 @@
 #!/usr/bin/env python
 
 import rospy
+import rospkg
+import rosparam
+import yaml
 from DeltaRobot import *
 import time
 import numpy as np
-
+import os
+import argparse
 # from tensorrt_demos_ros.msg import *
 from oakd_ros.msg import DetectionWithDepth
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Int16MultiArray, UInt8
+from geometry_msgs.msg import Twist
 
 
-class ChestnutPicker:
+class ChestnutPicker(object):
 
-	def __init__ (self):
+	def __init__ (self, params_file):
 
 		rospy.init_node("chestnut_picker_node", anonymous=True)
 		print("Start Chestnut-Picker-ROS node")
 
-		rospy.Subscriber("/oakd/detection", DetectionWithDepth, self.detection_callback)
-		rospy.Subscriber("/sbus_rc_ch", Int32MultiArray, self.sbus_ch_callback)
-
-		self.sbus_cmd_pub = rospy.Publisher("/sbus_cmd", Int32MultiArray, queue_size=10)
-		self.sbus_cmd = Int32MultiArray()
-
+		### Delta Robot init ###
 		self.dr = DeltaRobot()
 		self.dr.RobotTorqueOn()
 		self.dr.GripperTorqueOn()
 		self.dr.GoHome()
 		self.dr.GripperCheck()
-
 
 		### Detection's Parameters ###
 		self.nboxes = 0
@@ -36,44 +35,97 @@ class ChestnutPicker:
 		self.yc = np.array([])
 		self.closest_depth = np.array([])
 
-		### Robot Arm's Parameters ###
-		## TODO : change Xlenght, Ylength according to how much the robot in home position can see in that frame size
-		##        change YBucket, ZBucket according to the height and distance of bucket
-		##        change grabHeight to the height where robot can grab easily
-		## use DR_Kinematics.py script to get robot coordinates of each position
-		self.Xlength = 840.0 #760.0 # This is a true length from camera view
-		self.Ylength = 480.0 #575.0
+		#### ROS Params ####
+		if params_file is None:
+			self.Xlength = 880.0 #840.0 #760.0 # This is a true length from camera view
+			self.Ylength = 500.0 #480.0 #575.0
 
-		self.grabHeight = -763.0 #-745.0	#-720.0 #-725.0  #-723.0
-		self.XBucket = 0.0
-		self.YBucket = -280.0 #600.0
-		self.ZBucket = -350.0 #-300.0
+			self.XLeftLimit = -260.0
+			self.XRightLimit = 230.0
+			self.YUpperLimit = 200.0
 
-		self.XHome = 0.0
-		self.YHome = 0.0
-		self.ZHome = -329.9795
+			self.grabHeight = -785.0 #-763.0 #-745.0	
+			self.XBucket = 0.0
+			self.YBucket = -300.0 #-280.0 
+			self.ZBucket = -350.0 #-350.0 
 
-		self.finishTime = 1200
+			self.cameraOffset = 90.0  #95.0
+			#self.roverOffset = 45.0   #according to the throttle speed
 
-		self.cameraOffset = 90.0  #95.0
-		self.roverOffset = 45.0   #according to the throttle speed
+			### Speed ###
+			self.vx_fwd_const = 0.1 #1120	#1140
+			self.vx_bwd_const = 0.05	#870
 
+			### Timer Parameters ###
+			self.finishTime = 1200
+			self.waitTime = 0.8 #0.5
+			self.grab_waitTime = 0.5
+			self.goHome_waitTime = 0.6 #1.2
+
+			self.show_log = True
+
+
+		else:
+
+			f = open(params_file, 'r')
+			yamlfile = yaml.load(f)
+			rosparam.upload_params("/", yamlfile)
+			sv_node = 'delta_robot_params'
+			self.Xlength = rosparam.get_param(sv_node+"/Xlength")
+			self.Ylength = rosparam.get_param(sv_node+"/Ylength")
+			self.XLeftLimit = rosparam.get_param(sv_node+"/XLeftLimit")
+			self.XRightLimit = rosparam.get_param(sv_node+"/XRightLimit")
+			self.YUpperLimit = rosparam.get_param(sv_node+"/YUpperLimit")
+			self.grabHeight = rosparam.get_param(sv_node+"/grabHeight")
+			self.XBucket = rosparam.get_param(sv_node+"/XBucket")
+			self.YBucket = rosparam.get_param(sv_node+"/YBucket")
+			self.ZBucket = rosparam.get_param(sv_node+"/ZBucket")
+			self.cameraOffset = rosparam.get_param(sv_node+"/cameraOffset")
+			self.vx_fwd_const = rosparam.get_param(sv_node+"/vx_fwd_const")
+			self.vx_bwd_const = rosparam.get_param(sv_node+"/vx_bwd_const")
+			self.finishTime = rosparam.get_param(sv_node+"/finishTime")
+			self.waitTime = rosparam.get_param(sv_node+"/waitTime")
+			self.grab_waitTime = rosparam.get_param(sv_node+"/grab_waitTime")
+			self.goHome_waitTime = rosparam.get_param(sv_node+"/goHome_waitTime")
+			self.show_log = rosparam.get_param(sv_node+"/show_log")
+
+
+		rospy.loginfo("Using parameters below")
+		rospy.loginfo("Xlength: {}".format(self.Xlength))
+		rospy.loginfo("Ylength: {}".format(self.Ylength))
+		rospy.loginfo("XLeftLimit: {}".format(self.XLeftLimit))
+		rospy.loginfo("XRightLimit: {}".format(self.XRightLimit))
+		rospy.loginfo("YUpperLimit: {}".format(self.YUpperLimit))
+		rospy.loginfo("grabHeight: {}".format(self.grabHeight))
+		rospy.loginfo("XBucket: {}".format(self.XBucket))
+		rospy.loginfo("YBucket: {}".format(self.YBucket))
+		rospy.loginfo("ZBucket: {}".format(self.ZBucket))
+		rospy.loginfo("cameraOffset: {}".format(self.cameraOffset))
+		rospy.loginfo("vx_fwd_const: {}".format(self.vx_fwd_const))
+		rospy.loginfo("vx_bwd_const: {}".format(self.vx_bwd_const))
+		rospy.loginfo("finishTime: {}".format(self.finishTime))
+		rospy.loginfo("waitTime: {}".format(self.waitTime))
+		rospy.loginfo("grab_waitTime: {}".format(self.grab_waitTime))
+		rospy.loginfo("goHome_waitTime: {}".format(self.goHome_waitTime))
+		rospy.loginfo("show_log: {}".format(self.show_log))
+
+		### Local params ###
 		self.ROBOT_MODE = "MANUAL"
 		self.picker_flag = True
 
-		### Motion Parameters ###
-		self.waitTime = 0.8 #0.5
-		self.grab_waitTime = 0.5
-		self.goGome_waitTime = 0.6 #1.2
+		### Pub/Sub ###
+		rospy.Subscriber("/oakd/detection", DetectionWithDepth, self.detection_callback)
+		rospy.Subscriber("/jmoab/sbus_rc_ch", Int16MultiArray, self.sbus_ch_callback)
+		rospy.Subscriber("/jmoab/cart_mode", UInt8, self.cart_mode_callback)
 
-		self.const_throttle = 1150 #1120	#1140
-		self.const_bwd_throttle = 960	#870
-
-
+		self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
 		self.loop()
 
 		rospy.spin()
 
+	#####################
+	### ROS Callbacks ###
+	#####################
 	def detection_callback(self, msg):
 
 		self.nboxes = msg.nboxes
@@ -88,13 +140,6 @@ class ChestnutPicker:
 
 	def sbus_ch_callback(self, msg):
 
-		if msg.data[4] < 700:
-			self.ROBOT_MODE = "HOLD"
-		elif msg.data[4] < 1500:
-			self.ROBOT_MODE = "MANUAL"
-		else:
-			self.ROBOT_MODE = "AUTO"
-
 		## ch6 [5] for pwmcart
 		## ch7 [6] for atcart
 		if msg.data[6] > 1500:
@@ -102,10 +147,17 @@ class ChestnutPicker:
 		else:
 			self.picker_flag = False
 
+	def cart_mode_callback(self, msg):
+		if msg.data == 0:
+			self.ROBOT_MODE = "HOLD"
+		elif msg.data == 1:
+			self.ROBOT_MODE = "MANUAL"
+		else:
+			self.ROBOT_MODE = "AUTO"
 
-
-
-
+	####################
+	### Math Helpers ###
+	####################
 	def map(self, val, in_min, in_max, out_min, out_max):
 
 		return (val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
@@ -115,7 +167,7 @@ class ChestnutPicker:
 		y = self.map(py,0,720,self.Ylength/2.0,-self.Ylength/2.0)
 		return x,y
 
-	def go_pick(self, from_move_flag):
+	def go_pick(self):
 
 		## check it again here, if object is still there
 		if self.nboxes > 0:
@@ -123,10 +175,11 @@ class ChestnutPicker:
 		
 			## from_move_flag is telling that the robot has initial speed or not
 			## if it has then we add some rover_offset 
-			if from_move_flag:
-				Y_with_offset = Y+self.cameraOffset+self.roverOffset
-			else:
-				Y_with_offset = Y+self.cameraOffset
+			# if from_move_flag:
+			# 	Y_with_offset = Y+self.cameraOffset+self.roverOffset
+			# else:
+			# 	Y_with_offset = Y+self.cameraOffset
+			Y_with_offset = Y+self.cameraOffset
 
 			## calculate height
 			Z_est = -self.closest_depth[0]*1000.0 - 108.0 # TODO: change this offset for other camera
@@ -141,8 +194,8 @@ class ChestnutPicker:
 				X,Y,Y_with_offset, Z))
 
 			## conditions if X,Y in frame area
-			X_in_frameZone = (-220.0 < X < 220.0)
-			Y_in_frameZone = (Y_with_offset < 200.0)
+			X_in_frameZone = (self.XLeftLimit < X < self.XRightLimit)
+			Y_in_frameZone = (Y_with_offset < self.YUpperLimit)
 
 			## if Y is in the proper zone
 			if (not X_in_frameZone) and (Y_in_frameZone):
@@ -165,9 +218,7 @@ class ChestnutPicker:
 				self.dr.GotoPoint(self.XBucket, 0.0,self.ZBucket)
 				time.sleep(self.waitTime)
 				self.dr.GoHome()
-				time.sleep(self.goGome_waitTime)
-
-
+				time.sleep(self.goHome_waitTime)
 
 			# else:
 			# 	print("Too close to front frame, go back a bit...")
@@ -179,6 +230,11 @@ class ChestnutPicker:
 		else:
 			return
 
+	def publish_cmd_vel(self, vx, wz):
+		cmd_vel_msg = Twist()
+		cmd_vel_msg.linear.x = vx
+		cmd_vel_msg.angular.z = wz
+		self.cmd_vel_pub.publish(cmd_vel_msg)
 
 
 	def loop(self):
@@ -193,10 +249,9 @@ class ChestnutPicker:
 
 			if (self.nboxes > 0) and (self.picker_flag):
 				# print("Found, stop cart")
-				sbus_throttle = 1024
-				sbus_steering = 1024
-				self.sbus_cmd.data = [sbus_steering, sbus_throttle]
-				self.sbus_cmd_pub.publish(self.sbus_cmd)
+				vx = 0.0
+				wz = 0.0
+				self.publish_cmd_vel(vx,wz)
 				time.sleep(move_delay)
 
 				# if (time.time() - last_move_time) > move_delay:
@@ -204,8 +259,7 @@ class ChestnutPicker:
 				# else:
 				# 	from_move_flag = False
 
-				# self.go_pick(from_move_flag)
-				self.go_pick(False)
+				self.go_pick()
 
 
 				## Wait a bit after stop
@@ -221,12 +275,10 @@ class ChestnutPicker:
 			else:
 				# print("Going...")
 			
-				sbus_throttle = self.const_throttle
-				sbus_steering = 1024
+				vx = self.vx_fwd_const
+				wz = 0.0
 				
-				self.sbus_cmd.data = [sbus_steering, sbus_throttle]
-
-				self.sbus_cmd_pub.publish(self.sbus_cmd)
+				self.publish_cmd_vel(vx,wz)
 
 				# if from_pick_flag:
 				# 	time.sleep(move_delay)
@@ -242,4 +294,18 @@ class ChestnutPicker:
 
 if __name__ == "__main__":
 
-	CHP = ChestnutPicker()
+	parser = argparse.ArgumentParser(description='PWMCart with jmoab_ros')
+	parser.add_argument('--params_file',
+						help="A file path of DeltaRobotParams.yaml")
+
+	args = parser.parse_args(rospy.myargv()[1:])	# to make it work on launch file
+	params_file = args.params_file
+
+	if params_file is None:
+		print("No params_file is specified use local parameters")
+		yaml_path = None
+	else:
+		yaml_path = params_file
+		print("Use {:}".format(params_file))
+
+	CHP = ChestnutPicker(yaml_path)

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sleep 10
+sleep 5
 
 export DISPLAY=:0.0
 export LOGFILE=/home/nvidia/chestnut_picker_ros/autostart_scripts/data_conveter_node.log
@@ -9,7 +9,7 @@ source /opt/ros/melodic/setup.bash
 source /home/nvidia/catkin_ws/devel/setup.bash
 source /home/nvidia/chestnut_picker_ros/ROBOT_CONFIG.txt
 
-cd /home/nvidia/depthai_test
+cd /home/nvidia/chestnut_picker_ros
 
 while true
 do

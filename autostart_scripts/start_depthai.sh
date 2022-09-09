@@ -10,7 +10,7 @@ export OPENBLAS_CORETYPE=ARMV8
 #source /home/nvidia/catkin_ws/devel/setup.bash
 #source /home/nvidia/chestnut_picker_ros/ROBOT_CONFIG.txt
 
-cd /home/nvidia/depthai_test
+cd /home/nvidia/chestnut_picker_ros
 
 while true
 do

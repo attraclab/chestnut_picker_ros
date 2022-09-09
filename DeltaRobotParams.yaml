@@ -1,0 +1,35 @@
+delta_robot_params:
+
+  ## TODO : change Xlenght, Ylength according to how much the robot in home position can see in that frame size
+  ##        change YBucket, ZBucket according to the height and distance of bucket
+  ##        change grabHeight to the height where robot can grab easily
+
+  ## true length from camera view when robot is at home
+  Xlength: 880.0
+  Ylength: 500.0
+
+  XLeftLimit: -260.0
+  XRightLimit: 230.0
+  YUpperLimit: 200.0
+
+  ## grab
+  grabHeight: -785.0
+  XBucket: 0.0
+  YBucket: -300.0 
+  ZBucket: -330.0 
+
+  # camera offset
+  cameraOffset: 90.0
+
+  ## speed
+  vx_fwd_const: 0.15
+  vx_bwd_const: 0.05
+
+  # time/delay
+  finishTime: 1200  #ms
+  waitTime: 0.8     #s
+  grab_waitTime: 0.5 #s
+  goHome_waitTime: 0.6 #s
+
+  show_log: True
+
