@@ -53,6 +53,20 @@ Jetson Nano is running with Ubuntu 18.04, so we can only use ROS melodic distro 
 
 ## Operation
 
+### Start up
+
+Once the robot got power, please make sure to put the robot arm on empty space or on the ground, it would take around 2 minutes to start Wifi router and ensure everything is running properly, then you will see the robot is moving up to home position by itself.
+
+**NOTE**
+
+Normally the robot will automatically start once it got power on, the start up scripts are in `autostart_scripts` [directory](https://github.com/attraclab/chestnut_picker_ros/tree/dev-oakd/autostart_scripts). 
+
+I have copied the `~/chestnut_picker_ros/autostart_scripts/_config_autostart/start_all.desktop` to `~/.config/autostart`, then `autostart_all.sh` will be executed when Jetson Nano finished loading desktop, and all of node will be running accordingly.
+
+If we don't want to do autostart, we can remove `~/.config/autostart/start_all.desktop`, and reboot. That's in case we want to debug something, but most of the time we need to do autostart.
+
+### Transmitter
+
 We can drive the cart manually by using Futaba transmitter and set the Ch5 to `Manual` mode, the left stick up-down is to drive forward-backward direction, and the right stick left-right is to turn the cart left-right direction. If we put the Ch5 to `AUTO` mode, the cart will start to move by itself with constant speed. And on Ch6, we can enable or disable the robot arm movement. In case we want to drive the cart manually, we may need to disable the arm not to go pick up something during we drive the cart.
 
 ![](images/futaba_tx_rx.png)
