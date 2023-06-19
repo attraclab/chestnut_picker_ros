@@ -29,7 +29,7 @@ This project has three main components,
 
 The software is running on ROS (Robot-Operating-System), because it's easier to develop the robot when there are many data has to pass from one program to another. Please check on below diagram.
 
-![](image/software_diagram.jpg)
+![](images/software_diagram.jpg)
 
 ## AT_JMOAB
 
@@ -39,7 +39,7 @@ The `pwmcart` node is running to subscribe on `cmd_vel` topic, so it's waiting f
 
 ## Robot Manipulator
 
-The robot manipulator of this configuration is known as 3DOF parallel linkage or "Delta Robot", it's mostly used in manufacturing process for speed-picking. I have made another repo to explain about the working space and dimension of this robot, please check on [here](https://github.com/rasheeddo/The-Delta-Robot-MK2-Cpp). The code in that repo is C++, but I adopted that code to Python as in this repo, you can check it on `DeltaRobot.py` .
+The robot manipulator of this configuration is known as 3DOF parallel linkage or "Delta Robot", it's mostly used in manufacturing process for speed-picking. I have made another repo to explain about the working space and dimension of this robot, please check on [here](https://github.com/rasheeddo/The-Delta-Robot-MK2-Cpp). The code in that repo is C++, but I adopted that code to Python as in this repo, you can check it on [DeltaRobot.py](https://github.com/attraclab/chestnut_picker_ros/blob/dev-oakd/DeltaRobot.py) .
 
 There is a possibility that we want to change speed of the cart, the chestnut bucket position got changed or the speed of the arm has to be changed, then we use `DeltaRobotParams.yaml` file as parameters file. When we run `chestnut_picker_demo`, we need to pass the argument as `python chestnut_picker_demo.py --params_file DeltaRobotParams.yaml`.
 
@@ -47,7 +47,7 @@ There is a possibility that we want to change speed of the cart, the chestnut bu
 
 As explained above, we've trained the yolov4-tiny to detect only chestnut. Currently, the model consider consider all of the chestnut with and without shell as same object. For example, the image below is a sample data of training.
 
-![](image/sample_data.jpg)
+![](images/sample_data.jpg)
 
 Jetson Nano is running with Ubuntu 18.04, so we can only use ROS melodic distro (python2). But the SDK of Depthai for OAK-D needs python3, so I made some trick as `yolo_rgb_depth_aligned_UDP_socket` will be running by python3 and it will send data out to UDP port 8888 to `recvUdp_to_rostopic`, and this `recvUdp_to_rostopic` which will be running by python2 will convert the JSON data to ROS topic as `oakd/detection`.
 
@@ -55,4 +55,4 @@ Jetson Nano is running with Ubuntu 18.04, so we can only use ROS melodic distro 
 
 We can drive the cart manually by using Futaba transmitter and set the Ch5 to `Manual` mode, the left stick up-down is to drive forward-backward direction, and the right stick left-right is to turn the cart left-right direction. If we put the Ch5 to `AUTO` mode, the cart will start to move by itself with constant speed. And on Ch6, we can enable or disable the robot arm movement. In case we want to drive the cart manually, we may need to disable the arm not to go pick up something during we drive the cart.
 
-![](image/futaba_tx_rx.png)
+![](images/futaba_tx_rx.png)
