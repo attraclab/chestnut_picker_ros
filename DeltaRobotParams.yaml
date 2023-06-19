@@ -13,7 +13,7 @@ delta_robot_params:
   YUpperLimit: 200.0
 
   ## grab
-  grabHeight: -785.0
+  grabHeight: -865.0 #-785.0
   XBucket: 0.0
   YBucket: -300.0 
   ZBucket: -330.0 
@@ -22,7 +22,7 @@ delta_robot_params:
   cameraOffset: 90.0
 
   ## speed
-  vx_fwd_const: 0.15
+  vx_fwd_const: 0.35 #0.15
   vx_bwd_const: 0.05
 
   # time/delay

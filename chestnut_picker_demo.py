@@ -112,6 +112,7 @@ class ChestnutPicker(object):
 		### Local params ###
 		self.ROBOT_MODE = "MANUAL"
 		self.picker_flag = True
+		self.move_delay = 1.0
 
 		### Pub/Sub ###
 		rospy.Subscriber("/oakd/detection", DetectionWithDepth, self.detection_callback)
@@ -183,7 +184,8 @@ class ChestnutPicker(object):
 
 			## calculate height
 			Z_est = -self.closest_depth[0]*1000.0 - 108.0 # TODO: change this offset for other camera
-			if Z_est < self.grabHeight:
+			
+			if Z_est < (self.grabHeight):
 				print("use grabHeight")
 				Z = self.grabHeight
 			else:
@@ -200,8 +202,15 @@ class ChestnutPicker(object):
 			## if Y is in the proper zone
 			if (not X_in_frameZone) and (Y_in_frameZone):
 				print("X is out frame, and Y is close to frame")
+				self.publish_cmd_vel(self.vx_fwd_const,0.0)
+				time.sleep(self.move_delay)
 				return
 				#continue
+			elif (Z > self.ZBucket):
+				print("Z is strange...keep going instead")
+				self.publish_cmd_vel(self.vx_fwd_const,0.0)
+				time.sleep(self.move_delay)
+				return
 			else:
 				self.dr.GotoPoint(X,(Y_with_offset), Z)
 				time.sleep(self.waitTime)
@@ -228,6 +237,9 @@ class ChestnutPicker(object):
 			# 	self.sbus_cmd_pub.publish(self.sbus_cmd)
 			# 	time.sleep(1.0)
 		else:
+			print("Chestnut disappear...")
+			self.dr.GoHome()
+			time.sleep(self.goHome_waitTime)
 			return
 
 	def publish_cmd_vel(self, vx, wz):
@@ -243,7 +255,8 @@ class ChestnutPicker(object):
 		from_pick_flag = False
 		last_move_time = time.time()
 		j = 0
-		move_delay = 1.0
+
+		last_check_angle_stamp = time.time()		
 
 		while not rospy.is_shutdown():
 
@@ -252,21 +265,9 @@ class ChestnutPicker(object):
 				vx = 0.0
 				wz = 0.0
 				self.publish_cmd_vel(vx,wz)
-				time.sleep(move_delay)
-
-				# if (time.time() - last_move_time) > move_delay:
-				# 	from_move_flag = True
-				# else:
-				# 	from_move_flag = False
+				time.sleep(self.move_delay)
 
 				self.go_pick()
-
-
-				## Wait a bit after stop
-				# if from_move_flag and self.ROBOT_MODE == "AUTO":
-				# 	print("wait from move")
-				# 	time.sleep(1.5)
-
 
 				from_move_flag = False
 				from_pick_flag = True
@@ -274,21 +275,27 @@ class ChestnutPicker(object):
 
 			else:
 				# print("Going...")
+				if (time.time() - last_check_angle_stamp) > 3.0:
+					deg1, deg2, deg3 = self.dr.ReadAngleNormal()
+					print(deg1, deg2, deg3)
+					## in case the robot didn't go back to home position
+					## then it is dangerous to move the cart
+					if (deg1 > 140.0) or (deg2 > 140.0) or (deg2 > 140.0):
+						print("Force robot to restart")
+						# self.dr.GoHome()
+						quit()
+
+					last_check_angle_stamp = time.time()
 			
 				vx = self.vx_fwd_const
 				wz = 0.0
 				
 				self.publish_cmd_vel(vx,wz)
 
-				# if from_pick_flag:
-				# 	time.sleep(move_delay)
-
 				from_move_flag = True
 				from_pick_flag = False
 
 				last_move_time = time.time()
-
-
 
 			rate.sleep()
 

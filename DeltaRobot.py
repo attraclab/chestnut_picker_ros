@@ -1138,13 +1138,13 @@ class DeltaRobot:
 		if dxl_comm_result4 != COMM_SUCCESS:
 			print("GripperClose: ERROR")
 			print("%s" % self.packetHandler.getTxRxResult(dxl_comm_result4))
-			# self.portHandler.closePort()
-			# quit()
+			self.portHandler.closePort()
+			quit()
 		elif dxl_error4 != 0:
 			print("GripperClose: ERROR")
 			print("%s" % self.packetHandler.getRxPacketError(dxl_error4))
-			# self.portHandler.closePort()
-			# quit()
+			self.portHandler.closePort()
+			quit()
 		#self.IsGripperStop()
 		#print("Gripper closed")
 
